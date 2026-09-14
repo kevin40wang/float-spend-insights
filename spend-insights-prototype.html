@@ -1,0 +1,789 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spend Insights Prototype</title>
+<style>
+  :root{
+    --page:#f6f6f7; --side:#f6f6f7; --card:#ffffff; --ink:#16181c; --muted:#5d6472; --line:#e3e5e9; --seg:#d6dbe3;
+    --accent:#16181c; --soft:#eef1f6; --bar:#3b5bdb; --good:#15784a; --good-soft:#e4f3ea;
+    --warn:#955800; --warn-soft:#fcf0da; --info:#2f4fc9; --info-soft:#e8eefc; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  button{font:inherit;color:inherit}
+  .banner{background:var(--ink);color:#fff;font-size:12px;padding:6px 16px;text-align:center}
+
+  /* Prototype variant switcher (outside the product UI) */
+  .variantbar{background:#fff;border-bottom:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap}
+  .variantbar .lbl{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+  .vseg{display:inline-flex;background:#eceef2;border-radius:10px;padding:3px}
+  .vseg button{border:0;background:none;padding:7px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;color:#3a3e46;white-space:nowrap}
+  .vseg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+  .variantbar .cap{font-size:13px;color:var(--muted);max-width:560px}
+
+  .shell{display:flex;align-items:flex-start}
+  .side{width:290px;flex-shrink:0;position:sticky;top:0;height:100vh;overflow-y:auto;padding:14px 12px 14px 14px;display:flex;flex-direction:column;background:var(--side)}
+  .org{display:flex;align-items:center;gap:10px;padding:4px 4px 16px}
+  .logo{position:relative;width:38px;height:38px;border-radius:9px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex-shrink:0}
+  .logo .av{position:absolute;right:-6px;bottom:-6px;width:20px;height:20px;border-radius:50%;background:#e03131;color:#fff;font-size:8.5px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--side)}
+  .org-name{flex:1;min-width:0;font-weight:500;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .icon-btn{background:none;border:0;padding:6px;border-radius:8px;cursor:pointer;display:flex;color:var(--ink)}
+  .icon-btn:hover{background:#ebecef}
+  .send{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px;font-weight:500;font-size:16px;cursor:pointer;margin-bottom:18px}
+  .nav{display:flex;flex-direction:column;gap:2px}
+  .nav-item{display:flex;align-items:center;gap:14px;width:100%;background:none;border:0;border-radius:8px;padding:10px 14px;font-size:16px;cursor:pointer;text-align:left;color:#2b2e35}
+  .nav-item:hover{background:#ebecef}
+  .nav-item.active{background:#e6e7ea;font-weight:500;color:var(--ink)}
+  .nav-item .chev{margin-left:auto;display:flex}
+  .divider{height:1px;background:var(--line);margin:12px 0}
+  .side-foot{margin-top:auto;display:flex;justify-content:space-between;padding-top:16px}
+  .round{width:40px;height:40px;border-radius:50%;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .round.sq{border-radius:10px}
+  svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+
+  .mainwrap{flex:1;min-width:0;padding:14px 18px 14px 4px}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:36px;min-height:calc(100vh - 56px)}
+  .mobilebar{display:none;align-items:center;gap:10px;padding:12px 16px;background:var(--side);border-bottom:1px solid var(--line)}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px;margin-bottom:18px}
+  .flow{max-width:860px}
+  h1{font-size:26px;line-height:1.2;margin:4px 0 8px;letter-spacing:-.015em;font-weight:600}
+  h2{font-size:19px;line-height:1.3;margin:0 0 6px;font-weight:600}
+  p{margin:0 0 10px}
+  .eyebrow{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+  .muted{color:var(--muted)} .small{font-size:13px}
+
+  /* Welcome Guide */
+  .hero{padding:44px 44px 40px;margin-bottom:48px}
+  .hero h1{font-size:34px;margin:6px 0 12px}
+  .hero p.lead{font-size:16.5px;color:#3a3e46;max-width:760px}
+  .guide-card{padding:40px 38px 34px;margin-bottom:48px}
+  .guide-head{display:flex;align-items:flex-start;gap:24px}
+  .guide-head .txt{flex:1;min-width:0;padding-top:6px}
+  .guide-head h2{font-size:25px;font-weight:500;margin:0 0 8px}
+  .guide-head p{font-size:16.5px;color:#2b2e35;margin:0}
+  .continue{background:#16181c;color:#fff;border:0;border-radius:8px;padding:11px 16px 11px 18px;font-size:16px;font-weight:500;display:flex;align-items:center;gap:10px;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.25);white-space:nowrap}
+  .segs{display:grid;gap:16px;margin-top:30px}
+  .segs span{height:3px;border-radius:2px;background:var(--seg)}
+  .segs span.on{background:#16181c;height:4px}
+  .steps-left{font-size:14px;color:#3a3e46;margin-top:14px}
+
+  /* Baseline welcome hero (control) */
+  .wh{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,505px);gap:40px;align-items:center;padding:42px 44px;margin-bottom:48px}
+  .wh h1{font-size:36px;font-weight:500;margin:0 0 22px;letter-spacing:-.01em}
+  .wh .intro{font-size:16.5px;color:#2b2e35;margin:0 0 22px;max-width:620px}
+  .wh .chat{display:flex;align-items:center;gap:8px;font-size:16.5px;margin:0 0 20px}
+  .demo{position:relative;aspect-ratio:505/316;border-radius:8px;overflow:hidden;background:linear-gradient(135deg,#17307f 0%,#2346c9 55%,#2f5bea 100%);color:#fff;padding:18px 20px}
+  .demo-top{display:flex;align-items:center;gap:12px;font-size:17px;min-width:0}
+  .demo-top div{min-width:0}
+  .demo-top b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+  .demo-logo{width:40px;height:40px;border-radius:50%;background:#111;display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+  .demo-title{position:absolute;left:20px;top:30%;font-size:clamp(26px,3.6vw,48px);font-weight:800;line-height:1.04}
+  .play{position:absolute;left:52%;top:50%;transform:translate(-50%,-50%);width:84px;height:58px;border:0;border-radius:14px;background:#ff0033;color:#fff;font-size:24px;cursor:pointer}
+  .demo-watch{position:absolute;right:16px;bottom:14px;background:rgba(0,0,0,.55);padding:8px 16px;border-radius:999px;font-weight:600;font-size:15px}
+
+  .chips{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 16px}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:10px 16px;font-size:15px;cursor:pointer;text-align:left}
+  .chip:hover{border-color:var(--ink)}
+  .chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:11px 16px;font-weight:600;cursor:pointer;white-space:nowrap}
+  .btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn.sm{padding:8px 14px;font-weight:500}
+  .btn.xs{padding:6px 14px;font-size:14px;font-weight:500}
+  .btn:disabled{opacity:.4;cursor:default}
+  .link{background:none;border:0;color:var(--ink);text-decoration:underline;text-underline-offset:2px;cursor:pointer;padding:0}
+
+  /* Flow chrome */
+  .flowhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;max-width:860px}
+  .crumbs{font-size:14px;color:var(--muted);display:flex;gap:8px;align-items:center}
+  .crumbs button{background:none;border:0;padding:0;cursor:pointer;color:var(--muted)}
+  .crumbs b{color:var(--ink);font-weight:500}
+  .stepper{display:flex;align-items:center;gap:4px;list-style:none;margin:0 0 22px;padding:0 0 4px;overflow-x:auto;max-width:860px}
+  .stepper li{display:flex;align-items:center;gap:4px;flex-shrink:0}
+  .step{display:flex;align-items:center;gap:8px;border:0;background:none;padding:6px 12px 6px 6px;border-radius:999px;font-size:14px;color:var(--muted);white-space:nowrap;cursor:pointer}
+  .step .n{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--seg);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#fff}
+  .step:disabled{cursor:default;opacity:.45}
+  .step:not(:disabled):not(.current):hover{background:#f0f1f3;color:var(--ink)}
+  .step.done{color:var(--ink)}
+  .step.done .n{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+  .step.current{color:var(--ink);font-weight:600;background:var(--soft);cursor:default}
+  .step.current .n{background:var(--ink);border-color:var(--ink);color:#fff}
+  .sep{color:var(--seg);font-size:14px}
+  .stepnav{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px;padding-top:18px;border-top:1px solid var(--line)}
+
+  /* Hero recommendation (Next steps) */
+  .hero-rec{background:var(--ink);color:#fff;border-radius:16px;padding:34px;margin:0 0 18px;box-shadow:0 14px 34px rgba(22,24,28,.22)}
+  .hero-rec .eyebrow{color:#aeb4bf}
+  .hero-rec .basis{color:#c9ced6;font-size:14px;margin:6px 0 0}
+  .hero-rec h2{font-size:28px;line-height:1.2;color:#fff;margin:14px 0 6px;letter-spacing:-.01em}
+  .hero-rec .value{font-size:38px;font-weight:700;letter-spacing:-.02em;margin:2px 0 18px;color:#fff}
+  .hero-rec .meta{display:grid;grid-template-columns:max-content 1fr;gap:6px 14px;font-size:15px;color:#e8eaee;margin:0 0 24px}
+  .hero-rec .meta .k{color:#9aa1ad}
+  .hero-rec .btn{background:#fff;color:var(--ink);padding:15px 26px;font-size:17px;box-shadow:0 2px 0 rgba(0,0,0,.35)}
+  .hero-rec .done{display:inline-flex;align-items:center;gap:8px;background:rgba(82,214,142,.16);color:#9be8bd;padding:11px 14px;border-radius:8px;font-weight:600}
+  .hero-rec .link{color:#fff}
+  .opt{align-items:flex-start;flex-wrap:wrap}
+  .opt-txt{flex:1;min-width:220px}
+  .opt-act{display:flex;align-items:center;gap:14px;white-space:nowrap;padding-top:2px}
+
+  .pinned{background:var(--soft);border-radius:10px;padding:12px 14px;margin-bottom:16px}
+  .teaser{border:1px solid var(--line);border-radius:10px;padding:14px;margin:14px 0}
+  .locked{position:relative;margin-top:10px;border-radius:8px;overflow:hidden}
+  .blur{filter:blur(5px);user-select:none;pointer-events:none;padding:6px 0}
+  .lockmsg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;background:rgba(255,255,255,.35);text-align:center;padding:0 8px}
+  .drop{display:block;border:2px dashed var(--line);border-radius:10px;padding:22px;text-align:center;cursor:pointer;margin:10px 0}
+  .drop:hover{border-color:var(--ink)}
+  .uploaded{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--good-soft);border-radius:10px;padding:14px 16px;margin:10px 0}
+  select,input[type=number]{font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  select{width:100%;max-width:340px}
+  input[type=number]{width:150px}
+  ol.guide{margin:10px 0 0;padding-left:20px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .bar{height:9px;background:var(--line);border-radius:6px;overflow:hidden;margin-top:5px}
+  .bar>span{display:block;height:100%;background:var(--bar)}
+  .badge{font-size:12px;padding:2px 8px;border-radius:999px;white-space:nowrap;display:inline-block}
+  .badge.up{background:var(--warn-soft);color:var(--warn)}
+  .badge.ok{background:var(--good-soft);color:var(--good)}
+  .badge.info{background:var(--info-soft);color:var(--info)}
+  .callout{background:var(--soft);border-radius:10px;padding:12px 14px;margin:14px 0 0}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;color:var(--muted);font-weight:600}
+  .num{text-align:right;white-space:nowrap}
+  .fee{border:1px solid var(--line);border-radius:10px;padding:14px;margin-top:14px}
+  .big{font-size:28px;font-weight:700;letter-spacing:-.015em;margin:4px 0 4px}
+  ul.steps{list-style:none;padding:0;margin:16px 0 0}
+  ul.steps li{padding:8px 0;color:var(--muted)}
+  ul.steps li::before{content:"○";display:inline-block;width:22px}
+  ul.steps li.doing{color:var(--ink);font-weight:600}
+  ul.steps li.doing::before{content:"◌"}
+  ul.steps li.done{color:var(--good)}
+  ul.steps li.done::before{content:"✓"}
+  .total{display:flex;justify-content:space-between;align-items:baseline;font-weight:700;font-size:20px;padding-top:14px;margin-top:6px;border-top:2px solid var(--ink)}
+  .actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:16px}
+  .toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-size:14px;z-index:10;max-width:90vw}
+  .foot{font-size:12.5px;color:var(--muted);margin-top:14px}
+
+  @media (max-width:1180px){
+    .wh{grid-template-columns:1fr;gap:26px}
+    .demo{max-width:505px}
+  }
+  @media (max-width:900px){
+    .side{display:none}
+    .mobilebar{display:flex}
+    .mainwrap{padding:10px}
+    .panel{padding:14px;min-height:auto}
+    .hero,.guide-card{padding:22px;margin-bottom:22px}
+    .hero h1{font-size:26px}
+    .wh{padding:22px;margin-bottom:22px}
+    .wh h1{font-size:26px;margin-bottom:14px}
+    .guide-head{flex-wrap:wrap;gap:14px;align-items:center}
+    .guide-head .txt{flex-basis:100%;order:3;padding-top:0}
+    .guide-head .continue{margin-left:auto}
+    .guide-head h2{font-size:21px}
+    .guide-head svg.illus{width:56px;height:56px}
+    .card{padding:18px}
+    h1{font-size:22px}
+    .flowhead{flex-wrap:nowrap}
+    .crumbs{font-size:13px;white-space:nowrap;min-width:0;overflow:hidden}
+    .flowhead .btn.sm{padding:7px 12px}
+    .hero-rec{padding:22px}
+    .hero-rec h2{font-size:22px}
+    .hero-rec .value{font-size:28px}
+    .hero-rec .meta{grid-template-columns:1fr;gap:2px}
+    .hero-rec .meta .k{margin-top:8px}
+    .hero-rec .btn{width:100%;white-space:normal}
+    .variantbar .cap{text-align:center}
+  }
+</style>
+
+<div class="banner">Concept prototype for a Float Growth PM case study · illustrative data · not an official Float product</div>
+<div class="variantbar" id="variantbar"></div>
+<div class="mobilebar"><div class="logo">f<span class="av">PR</span></div><b>Larkspur Creative</b></div>
+<div class="shell">
+  <aside class="side" id="side"></aside>
+  <div class="mainwrap"><main class="panel" id="app"></main></div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const ICONS = {
+  star:'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" fill="currentColor"/>',
+  home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
+  requests:'<circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/>',
+  list:'<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>',
+  card:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/>',
+  reimb:'<rect x="3" y="6" width="18" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/><path d="M7 3h10"/>',
+  bill:'<path d="M6 3h9l4 4v14H6z"/><path d="M9 11h7M9 15h7M9 7h3"/>',
+  send:'<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
+  book:'<path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21a2 2 0 0 1 2-2h13"/>',
+  chart:'<path d="M4 20h16M7 16v-5M12 16V6M17 16v-8"/>',
+  wallet:'<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M5 6V4h12v2M16 13h2"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
+  help:'<circle cx="12" cy="12" r="9.5"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>',
+  collapse:'<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 3v18M15 9l-3 3 3 3"/>',
+  down:'<path d="m6 9 6 6 6-6"/>',
+  right:'<path d="m9 6 6 6-6 6"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+  updown:'<path d="m8 9 4-4 4 4M8 15l4 4 4-4"/>',
+  chat:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>'
+};
+const icon = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
+
+const NAV = [
+  [['star','Welcome Guide','home'], ['home','Overview'], ['requests','Requests'], ['list','Transactions']],
+  [['card','Cards',null,true], ['reimb','Reimbursements'], ['bill','Bill Pay'], ['send','Payments']],
+  [['book','Accounting',null,true], ['chart','Reporting']],
+  [['wallet','Accounts']],
+  [['user','Users'], ['gear','Settings']]
+];
+
+function renderSide(){
+  document.getElementById('side').innerHTML = `
+    <div class="org">
+      <div class="logo">f<span class="av">PR</span></div>
+      <div class="org-name">Larkspur Creative</div>
+      <button class="icon-btn" data-action="stub" aria-label="Switch organization">${icon('updown')}</button>
+      <button class="icon-btn" data-action="stub" aria-label="Search">${icon('search')}</button>
+    </div>
+    <button class="send" data-action="stub">${icon('send')} Send Money</button>
+    ${NAV.map((group, gi) => `<div class="nav">${group.map(([ic, label, to, chev]) =>
+      `<button class="nav-item ${to === 'home' ? 'active' : ''}" data-action="${to ? 'goto' : 'stub'}" data-to="${to || ''}">${icon(ic)}<span>${label}</span>${chev ? `<span class="chev">${icon('down')}</span>` : ''}</button>`
+    ).join('')}</div>${gi < NAV.length - 1 ? '<div class="divider"></div>' : ''}`).join('')}
+    <div class="side-foot">
+      <button class="round" data-action="stub" aria-label="Help">${icon('help')}</button>
+      <button class="round sq" data-action="stub" aria-label="Collapse sidebar">${icon('collapse')}</button>
+    </div>`;
+}
+
+const BUILDING = `<svg class="illus" width="76" height="76" viewBox="0 0 64 64" aria-hidden="true">
+  <rect x="7" y="24" width="20" height="34" fill="#fff" stroke="#2b3a55" stroke-width="2.2"/>
+  <rect x="27" y="8" width="30" height="50" fill="#dde5f0" stroke="#2b3a55" stroke-width="2.2"/>
+  ${[14,23,32,41].map(y => `<rect x="33" y="${y}" width="6" height="5" fill="#2b3a55"/><rect x="45" y="${y}" width="6" height="5" fill="#2b3a55"/>`).join('')}
+  <rect x="12" y="31" width="4" height="5" fill="#2b3a55"/><rect x="12" y="41" width="4" height="5" fill="#2b3a55"/>
+  <rect x="38" y="49" width="8" height="9" fill="#fff" stroke="#2b3a55" stroke-width="2"/>
+</svg>`;
+const EXPLORE = `<svg class="illus" width="76" height="76" viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="#2b3a55" stroke-width="2.2" stroke-linejoin="round">
+  <rect x="22" y="16" width="36" height="22" rx="2" fill="#dde5f0"/><path d="M22 23h36"/>
+  <rect x="6" y="30" width="36" height="22" rx="2" fill="#fff"/><path d="M6 37h36"/>
+  <path d="M12 6v8M8 10h8" stroke-linecap="round"/><path d="M52 44v8M48 48h8" stroke-linecap="round"/>
+</svg>`;
+
+/* ---------- Content ---------- */
+const QUESTIONS = [
+  {id:'fx', label:'What is FX costing us?', preview:'Card FX fees by vendor, plus what US wire transfers cost you.'},
+  {id:'vendors', label:'Who are our top vendors?', preview:'Your vendors ranked by spend, which ones bill every month, and recent price changes.'},
+  {id:'peers', label:'Are we spending more than similar businesses?', preview:'Your spend by category next to 146 agencies your size on Float.'},
+  {id:'cashback', label:'How much cashback could we earn?', preview:'Cashback on your current card spend, broken down by category.'}
+];
+const MAX_CHIPS = 4;
+const qLabel = id => QUESTIONS.find(q => q.id === id).label;
+
+const STEPS = [
+  {id:'question', label:'Question'},
+  {id:'upload', label:'Upload'},
+  {id:'review', label:'Review'},
+  {id:'report', label:'Insights'},
+  {id:'next', label:'Next steps'}
+];
+
+const TOTAL_90 = 61840;
+const MONTHLY = 20610;
+const CATS = [
+  {name:'Ads', q90:21600, peer:7800},
+  {name:'Software', q90:18900, peer:3900},
+  {name:'Travel', q90:7400, peer:1900},
+  {name:'Meals & entertainment', q90:4300, peer:1500},
+  {name:'Office & supplies', q90:3100, peer:1200},
+  {name:'Cloud & hosting', q90:2900, peer:800},
+  {name:'Other', q90:3640, peer:null}
+];
+const FX_ROWS = [
+  {v:'LinkedIn Ads', a:6000}, {v:'HubSpot', a:3450}, {v:'US travel (hotels, rides)', a:2400},
+  {v:'Figma', a:2025}, {v:'Semrush', a:1080}, {v:'Asana', a:990},
+  {v:'Notion', a:720}, {v:'Loom', a:540}, {v:'Zoom', a:285}
+];
+const FX_USD_90 = 17490, FX_FEE_90 = 437, CARD_FX_SAVE_YR = 1570;
+const TOP_VENDORS = [
+  {v:'Meta Ads', type:'Ads · every month', a:9800},
+  {v:'LinkedIn Ads', type:'Ads · every month · USD', a:6000},
+  {v:'Google Ads', type:'Ads · every month', a:5800},
+  {v:'Adobe Creative Cloud', type:'Subscription', a:4140},
+  {v:'Air Canada', type:'Travel · one-off', a:3960},
+  {v:'HubSpot', type:'Subscription · USD', a:3450},
+  {v:'Figma', type:'Subscription · USD', a:2025},
+  {v:'Dropbox', type:'Subscription', a:1968, flag:'Possible overlap with Google Drive'},
+  {v:'Slack', type:'Subscription', a:1830, flag:'Up 18% at last renewal'},
+  {v:'Google Workspace', type:'Subscription', a:1512}
+];
+const REVIEW_ROWS = [
+  {m:'Meta Ads', c:'Ads', a:9800}, {m:'LinkedIn Ads', c:'Ads', a:6000}, {m:'Google Ads', c:'Ads', a:5800},
+  {m:'Adobe Creative Cloud', c:'Software', a:4140}, {m:'Air Canada', c:'Travel', a:3960}, {m:'HubSpot', c:'Software', a:3450},
+  {m:'Loblaws', c:'Groceries', a:212.40, personal:true}, {m:'Netflix', c:'Streaming', a:59.97, personal:true}
+];
+
+const TEASERS = {
+  fx:{show:'Canadian bank cards typically add <b>~2.5%</b> to every USD purchase.', lock:'What FX cost your business last quarter'},
+  vendors:{show:'Agencies your size on Float pay about <b>45 vendors</b>. The top 10 make up most of the spend.', lock:'Your top vendors, ranked by spend'},
+  peers:{show:'Typical monthly card spend for 20–50 person agencies on Float: <b>$18,600</b>.', lock:'Your spend vs. theirs, category by category'},
+  cashback:{show:'Ads and software earn agencies your size the <b>most cashback</b> on Float.', lock:'Your cashback estimate, by category'}
+};
+
+/* ---------- State ---------- */
+const S = {
+  variant:'baseline',
+  screen:'home', q:null, visited:new Set(), personal:new Set(),
+  uploaded:false, reportReady:false,
+  staged:{usd:false, cards:false, limit:false, spend:false, cash:false},
+  wires:null, wireVol:700000, cashAmt:50000, issuer:''
+};
+
+const fmt = n => '$' + Math.round(n).toLocaleString('en-CA');
+const fxSaveYr = () => CARD_FX_SAVE_YR + (S.wires ? S.wireVol * 0.0225 : 0);
+const canReach = i => [true, !!S.q, S.uploaded, S.reportReady, S.reportReady][i];
+const stepDone = i => [!!S.q, S.uploaded, S.reportReady, S.reportReady && S.visited.size > 0, Object.values(S.staged).some(Boolean)][i];
+
+function go(screen){
+  const i = STEPS.findIndex(s => s.id === screen);
+  if (i > -1 && !canReach(i)) return;
+  if (screen === 'report' && S.q) S.visited.add(S.q);
+  S.screen = screen; render(); window.scrollTo(0,0);
+}
+function toast(msg){ const t = document.getElementById('toast'); t.textContent = msg; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(() => t.hidden = true, 2600); }
+
+/* ---------- Variant switcher ---------- */
+function renderVariantBar(){
+  const base = S.variant === 'baseline';
+  document.getElementById('variantbar').innerHTML = `
+    <span class="lbl">Prototype view</span>
+    <div class="vseg" role="tablist" aria-label="Test variant">
+      <button role="tab" aria-selected="${base}" class="${base ? 'on' : ''}" data-action="variant" data-id="baseline">Baseline (control)</button>
+      <button role="tab" aria-selected="${!base}" class="${base ? '' : 'on'}" data-action="variant" data-id="recipe">Recipe (test)</button>
+    </div>
+    <span class="cap">${base
+      ? "Control: today's Welcome Guide, with a welcome message and demo video at the top."
+      : 'Test: the welcome message is replaced with four spending questions that start the Spend Insights flow.'}</span>`;
+}
+
+/* ---------- Shared pieces ---------- */
+function chips(mode){
+  const action = {start:'pickq', select:'selectq', nav:'navq'}[mode];
+  return `<div class="chips" role="group" aria-label="Questions">` +
+    QUESTIONS.slice(0, MAX_CHIPS).map(q => {
+      const active = mode !== 'start' && S.q === q.id;
+      const seen = mode === 'nav' && S.visited.has(q.id) && !active;
+      return `<button class="chip ${active ? 'active' : ''}" data-action="${action}" data-id="${q.id}" aria-pressed="${active}">${seen ? '✓ ' : ''}${q.label}</button>`;
+    }).join('') + `</div>`;
+}
+
+function segs(total, on){
+  return `<div class="segs" style="grid-template-columns:repeat(${total},1fr)">${Array.from({length: total}, (_, i) => `<span class="${i < on ? 'on' : ''}"></span>`).join('')}</div>`;
+}
+
+function flowHead(){
+  return `<div class="flowhead">
+    <nav class="crumbs"><button data-action="goto" data-to="home">Welcome Guide</button><span>›</span><b>Spend Insights</b></nav>
+    <button class="btn secondary sm" data-action="goto" data-to="home">Exit Page</button>
+  </div>`;
+}
+
+function stepper(){
+  const cur = S.screen === 'processing' ? 1 : STEPS.findIndex(s => s.id === S.screen);
+  return `<ol class="stepper" aria-label="Steps">${STEPS.map((s, i) => {
+    const isCur = i === cur, done = stepDone(i) && !isCur;
+    return `<li>${i ? '<span class="sep" aria-hidden="true">›</span>' : ''}
+      <button class="step ${isCur ? 'current' : ''} ${done ? 'done' : ''}" data-action="step" data-i="${i}" ${canReach(i) ? '' : 'disabled'} ${isCur ? 'aria-current="step"' : ''}>
+        <span class="n">${done ? '✓' : i + 1}</span>${s.label}
+      </button></li>`;
+  }).join('')}</ol>`;
+}
+
+function stepNav(){
+  const btn = (label, to, cls = 'btn secondary', extra = '') => `<button class="${cls}" data-action="goto" data-to="${to}" ${extra}>${label}</button>`;
+  switch (S.screen) {
+    case 'question': return `<div class="stepnav">${btn('← Welcome Guide', 'home')}${btn('Continue →', 'upload', 'btn', S.q ? '' : 'disabled')}</div>`;
+    case 'upload': return `<div class="stepnav">${btn('← Back', 'question')}${S.uploaded ? btn('Next: Review →', 'review', 'btn') : '<span class="small muted">Upload a file to continue</span>'}</div>`;
+    case 'review': return `<div class="stepnav">${btn('← Back', 'upload')}<button class="btn" data-action="confirm">Looks right, see insights →</button></div>`;
+    case 'report': return `<div class="stepnav">${btn('← Back', 'review')}${btn('Next steps →', 'next', 'btn')}</div>`;
+    case 'next': return `<div class="stepnav">${btn('← Back to insights', 'report')}${btn('Finish', 'home', S.staged[heroFor(S.q).id] ? 'btn' : 'btn secondary')}</div>`;
+    default: return '';
+  }
+}
+
+/* ---------- Welcome Guide: baseline (control) and recipe (test) ---------- */
+function guideCards(){
+  return `
+  <section class="card guide-card">
+    <div class="guide-head">
+      ${BUILDING}
+      <div class="txt">
+        <h2>Verify Your Business</h2>
+        <p>Submit your business information for verification today and get approved in as little as <b>one business day</b>.</p>
+      </div>
+      <button class="continue" data-action="stub">Continue ${icon('right')}</button>
+    </div>
+    ${segs(5, 1)}
+    <div class="steps-left">4 steps left</div>
+  </section>
+
+  <section class="card guide-card">
+    <div class="guide-head">
+      ${EXPLORE}
+      <div class="txt">
+        <h2>Explore Float</h2>
+        <p><b>Curious where to start?</b> Complete the steps below to explore Float and get set up and start spending.</p>
+      </div>
+    </div>
+    ${segs(4, 0)}
+    <div class="steps-left">4 steps left</div>
+  </section>`;
+}
+
+function baselineHome(){
+  return `
+  <section class="card wh">
+    <div>
+      <h1>Welcome to Float, Priya!</h1>
+      <p class="intro"><b>The future of finance is here.</b> Manage your spend, track expenses, and pay bills — all in one easy-to-use platform.</p>
+      <p class="chat">${icon('chat')} Have questions? <button class="link" data-action="stub"><b>Let's Chat!</b></button></p>
+      <p class="small muted" style="margin:0">You can also visit our <button class="link small" data-action="stub">Help Centre</button> for more information and how-to guides.</p>
+    </div>
+    <div class="demo" role="img" aria-label="Quick Float Demo video thumbnail">
+      <div class="demo-top"><span class="demo-logo">f</span><div><b>2026 Demo of Float's Business Finance Platform</b><span class="small">Float</span></div></div>
+      <div class="demo-title">Quick<br>Float<br>Demo</div>
+      <button class="play" data-action="stub" aria-label="Play demo video">▶</button>
+      <div class="demo-watch">Watch on YouTube</div>
+    </div>
+  </section>
+  ${guideCards()}`;
+}
+
+function recipeHome(){
+  const ready = S.reportReady;
+  return `
+  <section class="card hero">
+    <div class="eyebrow">${ready ? 'Your Spend Report is ready' : 'While you get set up'}</div>
+    <h1>${ready ? 'Jump back into your spending answers' : 'Get answers about your business spending'}</h1>
+    <p class="lead">${ready ? 'Pick a question to open your report.' : "Pick a question. Upload your last 90 days of card transactions and we'll answer it with your own numbers, compared with similar businesses on Float."}</p>
+    ${chips('start')}
+    ${ready ? '' : `<p class="small muted" style="margin:0 0 6px">About 3 minutes · Read-only · Never part of your application review</p>
+    <button class="link small" data-action="skip">Not now</button>`}
+  </section>
+  ${guideCards()}`;
+}
+
+/* ---------- Recipe flow screens ---------- */
+function question(){
+  const q = S.q && QUESTIONS.find(x => x.id === S.q);
+  return `<section class="card">
+    <div class="eyebrow">What do you want to know?</div>
+    <h1>Pick a question to start</h1>
+    ${chips('select')}
+    ${q ? `<div class="pinned"><div class="eyebrow">You'll see</div>${q.preview}</div>` : ''}
+    <p class="small muted" style="margin:0">One upload answers all four. You can switch questions any time.</p>
+  </section>`;
+}
+
+function upload(){
+  const q = QUESTIONS.find(x => x.id === S.q);
+  const t = TEASERS[S.q];
+  const guide = S.issuer ? `<ol class="guide small">
+      <li>Sign in to ${S.issuer === 'Other' ? 'your card issuer' : S.issuer} online banking on a computer.</li>
+      <li>Open your business card's transactions and set the range to the last 90 days.</li>
+      <li>Choose <b>Download</b> or <b>Export</b> and pick <b>CSV</b>. No CSV? A PDF statement works too.</li>
+    </ol><p class="small muted" style="margin-top:6px">Prototype: exact steps vary by issuer.</p>` : '';
+  return `<section class="card">
+    <div class="pinned"><div class="eyebrow">You asked</div><b>${q.label}</b></div>
+    ${S.uploaded ? `
+      <div class="uploaded">
+        <span>✓ <b>larkspur-visa-last-90-days.csv</b> · 312 transactions</span>
+        <button class="link small" data-action="sample">Upload a different file</button>
+      </div>` : `
+      <div class="teaser">
+        <div class="eyebrow">From businesses like yours</div>
+        <p style="margin:6px 0 0">${t.show}</p>
+        <div class="locked">
+          <div class="blur"><div class="bar"><span style="width:72%"></span></div><div class="bar"><span style="width:48%"></span></div><div class="bar"><span style="width:30%"></span></div></div>
+          <div class="lockmsg">🔒 ${t.lock}. Unlocks with your upload.</div>
+        </div>
+      </div>
+      <h2>1. Download your last 90 days of transactions</h2>
+      <select data-input="issuer" aria-label="Card issuer">
+        <option value="">Choose your card issuer</option>
+        ${['RBC','TD','BMO','Scotiabank','CIBC','American Express','Credit union','Other'].map(i => `<option ${S.issuer === i ? 'selected' : ''}>${i}</option>`).join('')}
+      </select>
+      ${guide}
+      <h2 style="margin-top:22px">2. Upload it</h2>
+      <label class="drop">
+        <input type="file" accept=".csv,.pdf" multiple hidden data-input="file">
+        <b>Choose a file</b> or drag it here<br><span class="small muted">CSV or PDF · several cards are fine</span>
+      </label>
+      <div class="actions"><button class="btn secondary" data-action="sample">Use sample file (Larkspur Creative, 90 days)</button></div>`}
+    <p class="foot">We read date, merchant, amount, and currency only. Card numbers and the original file are deleted after processing. This never affects your application.</p>
+  </section>`;
+}
+
+function processing(){
+  return `<section class="card">
+    <div class="eyebrow">Building your report</div>
+    <h1>Reading your transactions…</h1>
+    <ul class="steps">
+      <li>Reading 312 transactions</li>
+      <li>Removing payments and refunds</li>
+      <li>Cleaning up merchant names</li>
+      <li>Finding recurring charges and USD spend</li>
+      <li>Comparing with 146 agencies on Float</li>
+    </ul>
+  </section>`;
+}
+
+function startProcessing(){
+  S.screen = 'processing'; render(); window.scrollTo(0,0);
+  let i = 0;
+  const tick = () => {
+    if (S.screen !== 'processing') return;
+    const lis = document.querySelectorAll('ul.steps li');
+    if (!lis.length) { setTimeout(tick, 550); return; }
+    if (i > 0) lis[i-1].className = 'done';
+    if (i < lis.length) { lis[i].className = 'doing'; i++; setTimeout(tick, 550); }
+    else setTimeout(() => { if (S.screen === 'processing') { S.uploaded = true; go('review'); } }, 300);
+  };
+  tick();
+}
+
+function review(){
+  const personalTotal = REVIEW_ROWS.filter(r => r.personal && !S.personal.has(r.m)).reduce((t,r) => t + r.a, 0);
+  const total = TOTAL_90 + personalTotal;
+  return `<section class="card">
+    <div class="eyebrow">Check it looks right</div>
+    <h1>Here's what we found</h1>
+    <p class="muted">312 transactions · Jun 14 – Sep 11 · Visa ending 4821</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Merchant</th><th>Category</th><th class="num">90 days</th><th></th></tr></thead>
+      <tbody>
+      ${REVIEW_ROWS.map(r => {
+        const excluded = r.personal && S.personal.has(r.m);
+        return `<tr style="${excluded ? 'opacity:.45;text-decoration:line-through' : ''}">
+          <td>${r.m}${r.personal ? ' <span class="badge up">Looks personal?</span>' : ''}</td>
+          <td>${r.c}</td>
+          <td class="num">${'$' + r.a.toLocaleString('en-CA', {minimumFractionDigits: r.a % 1 ? 2 : 0, maximumFractionDigits: 2})}</td>
+          <td class="num">${r.personal ? `<button class="link small" data-action="personal" data-id="${r.m}">${excluded ? 'Undo' : 'Mark personal'}</button>` : ''}</td>
+        </tr>`;
+      }).join('')}
+      <tr><td colspan="4" class="small muted">+ 43 more merchants</td></tr>
+      </tbody>
+    </table></div>
+    <div class="total"><span>Business spend</span><span>${'$' + total.toLocaleString('en-CA', {maximumFractionDigits: 0})}</span></div>
+    <p class="foot">Transactions you mark personal are removed and never stored.</p>
+  </section>`;
+}
+
+/* ---------- Insights ---------- */
+function answerFx(){
+  return `<h2>What is FX costing us?</h2>
+    <div class="big">$437 on card FX last quarter</div>
+    <p class="muted">Your card's ~2.5% foreign transaction fee on ~${fmt(FX_USD_90)} of USD purchases.${S.wires ? ` Plus about <b>${fmt(S.wireVol * 0.025 / 4)}</b> a quarter in spread on US wires.` : ''}</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>USD vendor</th><th class="num">90 days</th><th class="num">FX fee</th></tr></thead>
+      <tbody>
+        ${FX_ROWS.map(r => `<tr><td>${r.v}</td><td class="num">${fmt(r.a)}</td><td class="num">${fmt(r.a * 0.025)}</td></tr>`).join('')}
+        <tr><td><b>Total</b></td><td class="num"><b>${fmt(FX_USD_90)}</b></td><td class="num"><b>${fmt(FX_FEE_90)}</b></td></tr>
+      </tbody>
+    </table></div>
+    <div class="fee">
+      <b>Do you also pay US contractors or vendors by wire?</b>
+      <div class="actions" style="margin-top:8px">
+        <button class="btn ${S.wires === true ? '' : 'secondary'}" data-action="wires" data-id="yes">Yes</button>
+        <button class="btn ${S.wires === false ? '' : 'secondary'}" data-action="wires" data-id="no">No</button>
+      </div>
+      ${S.wires ? `<p class="small" style="margin:12px 0 4px">About how much per year? US$ <input type="number" min="0" step="10000" value="${S.wireVol}" data-input="wireVol" aria-label="Annual USD wire volume"></p>
+        <p class="small muted" style="margin:0">~${fmt(S.wireVol * 0.025)}/yr at a typical 2.5% bank spread.</p>` : ''}
+    </div>
+    <p class="foot">Card fee from the foreign transaction fees on your statement. Wire spread is a typical bank estimate.</p>`;
+}
+
+function answerVendors(){
+  const top = TOP_VENDORS.reduce((t,v) => t + v.a, 0);
+  return `<h2>Who are our top vendors?</h2>
+    <p>Your top 10 vendors are <b>${Math.round(top / TOTAL_90 * 100)}%</b> of card spend. <b>15</b> of your vendors bill every month.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Vendor</th><th class="num">90 days</th><th class="num">Share</th></tr></thead>
+      <tbody>
+        ${TOP_VENDORS.map((v, i) => `<tr>
+          <td class="muted">${i + 1}</td>
+          <td>${v.v}<br><span class="small muted">${v.type}</span>${v.flag ? `<br><span class="badge up">${v.flag}</span>` : ''}</td>
+          <td class="num">${fmt(v.a)}</td>
+          <td class="num">${Math.round(v.a / TOTAL_90 * 100)}%</td>
+        </tr>`).join('')}
+        <tr><td></td><td class="muted">39 more vendors</td><td class="num">${fmt(TOTAL_90 - top)}</td><td class="num">${Math.round((TOTAL_90 - top) / TOTAL_90 * 100)}%</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout">Your 3 ad platforms and 12 subscriptions bill every month: about <b>$13,500/mo</b> that repeats whether anyone is watching or not.</div>
+    <p class="foot">Amounts in CAD equivalent. Overlaps are suggestions. Check before cancelling anything.</p>`;
+}
+
+function answerPeers(){
+  const rows = CATS.filter(c => c.peer).map(c => {
+    const you = c.q90 / 3, r = you / c.peer;
+    const badge = r >= 1.25 ? `<span class="badge up">Above typical · ${r.toFixed(1)}x</span>` : r <= 0.8 ? `<span class="badge info">Below typical</span>` : `<span class="badge ok">Typical</span>`;
+    return `<tr><td>${c.name}</td><td class="num">${fmt(you)}</td><td class="num">${fmt(c.peer)}</td><td>${badge}</td></tr>`;
+  }).join('');
+  return `<h2>Are we spending more than similar businesses?</h2>
+    <p>Overall you're close to typical for your size. Two categories stand out.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Category</th><th class="num">You /mo</th><th class="num">Typical /mo</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <div class="callout">Your biggest gap is <b>Software: $6,300/mo vs. $3,900 typical</b>. 68% of agencies your size on Float set a monthly limit on software.</div>
+    <p class="foot">Compared with 146 marketing agencies (20–50 employees, Ontario) on Float. Groups under 30 businesses are never shown. "Above typical" isn't necessarily bad; it can be a deliberate investment.</p>`;
+}
+
+function answerCashback(){
+  const maxCb = CATS[0].q90 / 3 * 0.01;
+  return `<h2>How much cashback could we earn?</h2>
+    <div class="big">Up to ~$2,470/yr</div>
+    <p class="muted">On about ${fmt(MONTHLY)}/mo of eligible card spend, based on your last 90 days.</p>
+    ${CATS.map(c => {
+      const m = c.q90 / 3, cb = m * 0.01;
+      return `<div class="row" style="display:block">
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><span>${c.name} <span class="small muted">${fmt(m)}/mo</span></span><span><b>~${fmt(cb)}</b>/mo back</span></div>
+        <div class="bar"><span style="width:${cb / maxCb * 100}%"></span></div>
+      </div>`;
+    }).join('')}
+    <div class="callout">Ads and software earn about <b>two-thirds</b> of it, and they bill every month, so the cashback repeats.</div>
+    <p class="foot">Up to 1% cashback. Terms and any spend thresholds apply; confirm current tiers. Estimate, not a guarantee.</p>`;
+}
+
+function report(){
+  const body = {fx:answerFx, vendors:answerVendors, peers:answerPeers, cashback:answerCashback}[S.q]();
+  return `<section class="card">
+    <div class="eyebrow">Larkspur Creative · Business Spend Report</div>
+    <h1>Here's how your business spends</h1>
+    <p class="muted small" style="margin:0">Last 90 days · ${fmt(TOTAL_90)} on 1 card · compared with 146 marketing agencies on Float</p>
+    ${chips('nav')}
+  </section>
+  <section class="card">${body}</section>`;
+}
+
+/* ---------- Next steps ---------- */
+function heroFor(q){
+  return {
+    fx:{id:'usd', title:'Pay your USD bills from a USD account',
+      why: S.wires ? `$437 in card FX fees last quarter, plus ~${fmt(S.wireVol * 0.025)}/yr in spread on US wires` : `$437 in card FX fees last quarter on ~${fmt(FX_USD_90)} of USD purchases`,
+      product:'Float CAD & USD accounts · 0.25% FX', value:`Save ~${fmt(fxSaveYr())}/yr`,
+      cta:'Open a USD account', done:'USD account added to your setup'},
+    vendors:{id:'cards', title:'Give your 15 recurring vendors their own cards',
+      why:'3 ad platforms and 12 subscriptions bill ~$13,500/mo · 4 renew in the next 2 weeks · Slack went up 18%',
+      product:'Float virtual cards · a limit per vendor · an alert if a price changes', value:'$13,500/mo',
+      cta:'Create 15 vendor cards', done:'15 vendor cards added to your setup'},
+    peers:{id:'limit', title:"Cap software at today's spend",
+      why:'Software is $6,300/mo, 1.6x typical for agencies your size',
+      product:'Float spend controls · a monthly limit on software, with alerts', value:'$6,300/mo limit',
+      cta:'Set the software limit', done:'Software limit added to your setup'},
+    cashback:{id:'spend', title:'Run your card spend through Float',
+      why:`About ${fmt(MONTHLY)}/mo of eligible spend across ads, software, and travel`,
+      product:'Float cards · up to 1% cashback', value:'Up to ~$2,470/yr back',
+      cta:'Start earning cashback', done:'Card spend added to your setup'}
+  }[q];
+}
+
+const OPTIONS = [
+  {id:'usd', q:'fx', label:'Pay USD bills from a USD account', detail:() => `Save ~${fmt(fxSaveYr())}/yr on FX`},
+  {id:'cards', q:'vendors', label:'Give 15 recurring vendors their own cards', detail:() => '$13,500/mo on cards with a limit each'},
+  {id:'limit', q:'peers', label:"Cap software at today's spend", detail:() => '$6,300/mo limit with alerts'},
+  {id:'spend', q:'cashback', label:'Run your card spend through Float', detail:() => 'Up to ~$2,470/yr in cashback'},
+  {id:'cash', q:null, label:'Put idle operating cash to work', detail:() => 'Earn up to 3.5% on CDIC-insured balances'}
+];
+
+function optionRow(o){
+  const on = S.staged[o.id];
+  const cash = o.id === 'cash' && on
+    ? `<div class="small" style="margin-top:10px">Amount to move: $ <input type="number" min="0" step="5000" value="${S.cashAmt}" data-input="cashAmt" aria-label="Amount to move"> <span class="muted">Up to ~${fmt(S.cashAmt * 0.035)}/yr</span></div>`
+    : '';
+  return `<div class="row opt">
+    <div class="opt-txt"><b>${o.label}</b><br><span class="small muted">${o.detail()}${o.q ? ` · From "${qLabel(o.q)}"` : ''}</span>${cash}</div>
+    <div class="opt-act">${on
+      ? `<span class="badge ok">✓ Added</span><button class="link small" data-action="undo" data-id="${o.id}">Remove</button>`
+      : `<button class="btn secondary xs" data-action="hero" data-id="${o.id}">Add</button>${o.q ? `<button class="link small" data-action="review" data-q="${o.q}">See why</button>` : ''}`}</div>
+  </div>`;
+}
+
+function next(){
+  const h = heroFor(S.q), heroOn = S.staged[h.id];
+  const opts = OPTIONS.filter(o => o.id !== h.id);
+  const added = opts.filter(o => S.staged[o.id]).length;
+  return `<section class="hero-rec" aria-label="Recommended next step">
+    <div class="eyebrow">Recommended next step</div>
+    <p class="basis">Based on your question: ${qLabel(S.q)}</p>
+    <h2>${h.title}</h2>
+    <div class="value">${h.value}</div>
+    <div class="meta"><span class="k">Why</span><span>${h.why}</span><span class="k">With Float</span><span>${h.product}</span></div>
+    ${heroOn
+      ? `<div class="actions" style="margin-top:0"><span class="done">✓ ${h.done}</span><button class="link" data-action="undo" data-id="${h.id}">Undo</button></div>`
+      : `<button class="btn" data-action="hero" data-id="${h.id}">${h.cta}</button>`}
+  </section>
+  <section class="card">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap">
+      <h2 style="margin:0">What you're setting up</h2>${added ? `<span class="badge ok">${added} added</span>` : ''}
+    </div>
+    <p class="small muted" style="margin:4px 0 4px">You can add any of these too, and change them later.</p>
+    ${opts.map(optionRow).join('')}
+  </section>`;
+}
+
+function render(){
+  renderVariantBar();
+  const app = document.getElementById('app');
+  if (S.variant === 'baseline') { app.innerHTML = baselineHome(); return; }
+  const screens = {question, upload, processing, review, report, next};
+  app.innerHTML = S.screen === 'home'
+    ? recipeHome()
+    : flowHead() + stepper() + `<div class="flow">${screens[S.screen]()}${stepNav()}</div>`;
+}
+
+/* ---------- Events ---------- */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-action]'); if (!b || b.disabled) return;
+  const {action, id, to, i, q} = b.dataset;
+  if (action === 'variant') { S.variant = id; render(); window.scrollTo(0,0); return; }
+  if (S.variant === 'baseline') {
+    if (action === 'stub') toast("Baseline: this is today's Welcome Guide. Switch to Recipe to see the test.");
+    return;
+  }
+  switch (action) {
+    case 'pickq': S.q = id; go(S.reportReady ? 'report' : 'upload'); break;
+    case 'selectq': S.q = id; render(); break;
+    case 'navq': S.q = id; S.visited.add(id); render(); break;
+    case 'step': go(STEPS[Number(i)].id); break;
+    case 'goto': go(to); break;
+    case 'review': S.q = q; go('report'); break;
+    case 'skip': toast('No problem. You can come back to this anytime from your Welcome Guide.'); go('home'); break;
+    case 'stub': toast('Prototype: only the spend insights flow is built.'); break;
+    case 'sample': startProcessing(); break;
+    case 'personal': S.personal.has(id) ? S.personal.delete(id) : S.personal.add(id); render(); break;
+    case 'confirm': S.reportReady = true; go('report'); break;
+    case 'wires': S.wires = id === 'yes'; render(); break;
+    case 'hero': S.staged[id] = true; render(); break;
+    case 'undo': S.staged[id] = false; render(); break;
+  }
+});
+
+document.addEventListener('change', e => {
+  const k = e.target.dataset && e.target.dataset.input; if (!k) return;
+  if (k === 'issuer') { S.issuer = e.target.value; render(); }
+  if (k === 'file' && e.target.files.length) { toast('Prototype uses sample data for any file.'); startProcessing(); }
+  if (k === 'wireVol') { S.wireVol = Math.max(0, Number(e.target.value) || 0); render(); }
+  if (k === 'cashAmt') { S.cashAmt = Math.max(0, Number(e.target.value) || 0); render(); }
+});
+
+document.addEventListener('dragover', e => { if (e.target.closest && e.target.closest('.drop')) e.preventDefault(); });
+document.addEventListener('drop', e => {
+  if (S.variant !== 'recipe' || !(e.target.closest && e.target.closest('.drop'))) return;
+  e.preventDefault(); toast('Prototype uses sample data for any file.'); startProcessing();
+});
+
+renderSide();
+render();
+</script>
