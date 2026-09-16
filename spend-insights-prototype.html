@@ -273,12 +273,11 @@ const EXPLORE = `<svg class="illus" width="76" height="76" viewBox="0 0 64 64" a
 
 /* ---------- Content ---------- */
 const QUESTIONS = [
-  {id:'fx', label:'What is FX costing us?', preview:'Card FX fees by vendor, plus what US wire transfers cost you.'},
   {id:'vendors', label:'Who are our top vendors?', preview:'Your vendors ranked by spend, which ones bill every month, and recent price changes.'},
   {id:'peers', label:'Are we spending more than similar businesses?', preview:'Your spend by category next to 146 agencies your size on Float.'},
   {id:'cashback', label:'How much cashback could we earn?', preview:'Cashback on your current card spend, broken down by category.'}
 ];
-const MAX_CHIPS = 4;
+const MAX_CHIPS = 3;
 const qLabel = id => QUESTIONS.find(q => q.id === id).label;
 
 const STEPS = [
@@ -300,12 +299,6 @@ const CATS = [
   {name:'Cloud & hosting', q90:2900, peer:800},
   {name:'Other', q90:3640, peer:null}
 ];
-const FX_ROWS = [
-  {v:'LinkedIn Ads', a:6000}, {v:'HubSpot', a:3450}, {v:'US travel (hotels, rides)', a:2400},
-  {v:'Figma', a:2025}, {v:'Semrush', a:1080}, {v:'Asana', a:990},
-  {v:'Notion', a:720}, {v:'Loom', a:540}, {v:'Zoom', a:285}
-];
-const FX_USD_90 = 17490, FX_FEE_90 = 437, CARD_FX_SAVE_YR = 1570;
 const TOP_VENDORS = [
   {v:'Meta Ads', type:'Ads · every month', a:9800},
   {v:'LinkedIn Ads', type:'Ads · every month · USD', a:6000},
@@ -325,7 +318,6 @@ const REVIEW_ROWS = [
 ];
 
 const TEASERS = {
-  fx:{show:'Canadian bank cards typically add <b>~2.5%</b> to every USD purchase.', lock:'What FX cost your business last quarter'},
   vendors:{show:'Agencies your size on Float pay about <b>45 vendors</b>. The top 10 make up most of the spend.', lock:'Your top vendors, ranked by spend'},
   peers:{show:'Typical monthly card spend for 20–50 person agencies on Float: <b>$18,600</b>.', lock:'Your spend vs. theirs, category by category'},
   cashback:{show:'Ads and software earn agencies your size the <b>most cashback</b> on Float.', lock:'Your cashback estimate, by category'}
@@ -336,12 +328,11 @@ const S = {
   variant:'baseline',
   screen:'home', q:null, visited:new Set(), personal:new Set(),
   uploaded:false, reportReady:false,
-  staged:{usd:false, cards:false, limit:false, spend:false, cash:false},
-  wires:null, wireVol:700000, cashAmt:50000, issuer:''
+  staged:{cards:false, limit:false, spend:false, cash:false},
+  cashAmt:50000, issuer:''
 };
 
 const fmt = n => '$' + Math.round(n).toLocaleString('en-CA');
-const fxSaveYr = () => CARD_FX_SAVE_YR + (S.wires ? S.wireVol * 0.0225 : 0);
 const canReach = i => [true, !!S.q, S.uploaded, S.reportReady, S.reportReady][i];
 const stepDone = i => [!!S.q, S.uploaded, S.reportReady, S.reportReady && S.visited.size > 0, Object.values(S.staged).some(Boolean)][i];
 
@@ -364,7 +355,7 @@ function renderVariantBar(){
     </div>
     <span class="cap">${base
       ? "Control: today's Welcome Guide, with a welcome message and demo video at the top."
-      : 'Test: the welcome message is replaced with four spending questions that start the Spend Insights flow.'}</span>`;
+      : 'Test: the welcome message is replaced with three spending questions that start the Spend Insights flow.'}</span>`;
 }
 
 /* ---------- Shared pieces ---------- */
@@ -482,7 +473,7 @@ function question(){
     <h1>Pick a question to start</h1>
     ${chips('select')}
     ${q ? `<div class="pinned"><div class="eyebrow">You'll see</div>${q.preview}</div>` : ''}
-    <p class="small muted" style="margin:0">One upload answers all four. You can switch questions any time.</p>
+    <p class="small muted" style="margin:0">One upload answers all three. You can switch questions any time.</p>
   </section>`;
 }
 
@@ -581,29 +572,6 @@ function review(){
 }
 
 /* ---------- Insights ---------- */
-function answerFx(){
-  return `<h2>What is FX costing us?</h2>
-    <div class="big">$437 on card FX last quarter</div>
-    <p class="muted">Your card's ~2.5% foreign transaction fee on ~${fmt(FX_USD_90)} of USD purchases.${S.wires ? ` Plus about <b>${fmt(S.wireVol * 0.025 / 4)}</b> a quarter in spread on US wires.` : ''}</p>
-    <div class="table-wrap"><table>
-      <thead><tr><th>USD vendor</th><th class="num">90 days</th><th class="num">FX fee</th></tr></thead>
-      <tbody>
-        ${FX_ROWS.map(r => `<tr><td>${r.v}</td><td class="num">${fmt(r.a)}</td><td class="num">${fmt(r.a * 0.025)}</td></tr>`).join('')}
-        <tr><td><b>Total</b></td><td class="num"><b>${fmt(FX_USD_90)}</b></td><td class="num"><b>${fmt(FX_FEE_90)}</b></td></tr>
-      </tbody>
-    </table></div>
-    <div class="fee">
-      <b>Do you also pay US contractors or vendors by wire?</b>
-      <div class="actions" style="margin-top:8px">
-        <button class="btn ${S.wires === true ? '' : 'secondary'}" data-action="wires" data-id="yes">Yes</button>
-        <button class="btn ${S.wires === false ? '' : 'secondary'}" data-action="wires" data-id="no">No</button>
-      </div>
-      ${S.wires ? `<p class="small" style="margin:12px 0 4px">About how much per year? US$ <input type="number" min="0" step="10000" value="${S.wireVol}" data-input="wireVol" aria-label="Annual USD wire volume"></p>
-        <p class="small muted" style="margin:0">~${fmt(S.wireVol * 0.025)}/yr at a typical 2.5% bank spread.</p>` : ''}
-    </div>
-    <p class="foot">Card fee from the foreign transaction fees on your statement. Wire spread is a typical bank estimate.</p>`;
-}
-
 function answerVendors(){
   const top = TOP_VENDORS.reduce((t,v) => t + v.a, 0);
   return `<h2>Who are our top vendors?</h2>
@@ -657,7 +625,7 @@ function answerCashback(){
 }
 
 function report(){
-  const body = {fx:answerFx, vendors:answerVendors, peers:answerPeers, cashback:answerCashback}[S.q]();
+  const body = {vendors:answerVendors, peers:answerPeers, cashback:answerCashback}[S.q]();
   return `<section class="card">
     <div class="eyebrow">Larkspur Creative · Business Spend Report</div>
     <h1>Here's how your business spends</h1>
@@ -670,10 +638,6 @@ function report(){
 /* ---------- Next steps ---------- */
 function heroFor(q){
   return {
-    fx:{id:'usd', title:'Pay your USD bills from a USD account',
-      why: S.wires ? `$437 in card FX fees last quarter, plus ~${fmt(S.wireVol * 0.025)}/yr in spread on US wires` : `$437 in card FX fees last quarter on ~${fmt(FX_USD_90)} of USD purchases`,
-      product:'Float CAD & USD accounts · 0.25% FX', value:`Save ~${fmt(fxSaveYr())}/yr`,
-      cta:'Open a USD account', done:'USD account added to your setup'},
     vendors:{id:'cards', title:'Give your 15 recurring vendors their own cards',
       why:'3 ad platforms and 12 subscriptions bill ~$13,500/mo · 4 renew in the next 2 weeks · Slack went up 18%',
       product:'Float virtual cards · a limit per vendor · an alert if a price changes', value:'$13,500/mo',
@@ -690,7 +654,6 @@ function heroFor(q){
 }
 
 const OPTIONS = [
-  {id:'usd', q:'fx', label:'Pay USD bills from a USD account', detail:() => `Save ~${fmt(fxSaveYr())}/yr on FX`},
   {id:'cards', q:'vendors', label:'Give 15 recurring vendors their own cards', detail:() => '$13,500/mo on cards with a limit each'},
   {id:'limit', q:'peers', label:"Cap software at today's spend", detail:() => '$6,300/mo limit with alerts'},
   {id:'spend', q:'cashback', label:'Run your card spend through Float', detail:() => 'Up to ~$2,470/yr in cashback'},
@@ -764,7 +727,6 @@ document.addEventListener('click', e => {
     case 'sample': startProcessing(); break;
     case 'personal': S.personal.has(id) ? S.personal.delete(id) : S.personal.add(id); render(); break;
     case 'confirm': S.reportReady = true; go('report'); break;
-    case 'wires': S.wires = id === 'yes'; render(); break;
     case 'hero': S.staged[id] = true; render(); break;
     case 'undo': S.staged[id] = false; render(); break;
   }
@@ -774,7 +736,6 @@ document.addEventListener('change', e => {
   const k = e.target.dataset && e.target.dataset.input; if (!k) return;
   if (k === 'issuer') { S.issuer = e.target.value; render(); }
   if (k === 'file' && e.target.files.length) { toast('Prototype uses sample data for any file.'); startProcessing(); }
-  if (k === 'wireVol') { S.wireVol = Math.max(0, Number(e.target.value) || 0); render(); }
   if (k === 'cashAmt') { S.cashAmt = Math.max(0, Number(e.target.value) || 0); render(); }
 });
 
